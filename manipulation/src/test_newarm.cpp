@@ -426,7 +426,7 @@ void attemptPlace(moveit::planning_interface::MoveGroup &group, geometry_msgs::P
 {
     ROS_INFO("Go to target_pose2");
     moveit::planning_interface::MoveGroup::Plan my_plan;
-    bool success = group.plan(my_plan);
+    moveit::planning_interface::MoveItErrorCode success = group.plan(my_plan);
 /******************************************************************
 *                 First move to close enough position             *
 ******************************************************************/
@@ -604,7 +604,7 @@ void pickup_angle(moveit::planning_interface::MoveGroup &group, geometry_msgs::P
     group.setPoseTarget(target_pose1);
     // plan
     moveit::planning_interface::MoveGroup::Plan my_plan;
-    bool success = group.plan(my_plan);
+    moveit::planning_interface::MoveItErrorCode success = group.plan(my_plan);
     my_plan.trajectory_.joint_trajectory.joint_names.push_back("joint_8");
     my_plan.trajectory_.joint_trajectory.joint_names.push_back("joint_9");
     // visualization
@@ -667,7 +667,7 @@ void attemptPickup(moveit::planning_interface::MoveGroup &group, geometry_msgs::
 
     // plan
     moveit::planning_interface::MoveGroup::Plan my_plan;
-    bool success = group.plan(my_plan);
+    moveit::planning_interface::MoveItErrorCode success = group.plan(my_plan);
     //my_plan.trajectory_.joint_trajectory.joint_names.push_back("joint_8");
     //my_plan.trajectory_.joint_trajectory.joint_names.push_back("joint_9");
     //compensatePlan(my_plan, current_joint_values[7], current_joint_values[8]);
@@ -929,7 +929,7 @@ void gotoNamedTarget(moveit::planning_interface::MoveGroup &group, std::string t
     // plan
     moveit::planning_interface::MoveGroup::Plan my_plan;
     group.setJointValueTarget(group_variable_values);
-    bool success = group.plan(my_plan);
+    moveit::planning_interface::MoveItErrorCode success = group.plan(my_plan);
     //my_plan.trajectory_.joint_trajectory.joint_names.push_back("joint_8");
     //my_plan.trajectory_.joint_trajectory.joint_names.push_back("joint_9");
     //compensatePlan(my_plan, current_joint_values[7], current_joint_values[8]);

@@ -392,7 +392,7 @@ void gotoNamedTarget(moveit::planning_interface::MoveGroup &group, std::string t
     // plan
     moveit::planning_interface::MoveGroup::Plan my_plan;
     group.setJointValueTarget(group_variable_values);
-    bool success = group.plan(my_plan);
+    moveit::planning_interface::MoveItErrorCode success = group.plan(my_plan);
     //compensate_slark(my_plan);
     /*
     sleep(5);
@@ -541,7 +541,7 @@ void approach(moveit::planning_interface::MoveGroup &group)
     group.setPoseTarget(pose_approach);
     // plan
     moveit::planning_interface::MoveGroup::Plan plan_approach;
-    bool success = group.plan(plan_approach);
+    moveit::planning_interface::MoveItErrorCode success = group.plan(plan_approach);
     //compensate_slark(my_plan); //compensate the slark for 2nd motor
     // visualization
     ROS_INFO("Visualizing plan of appraching object (pose goal) %s",success?"":"FAILED");    
@@ -595,7 +595,7 @@ void regrasp(moveit::planning_interface::MoveGroup &group, ros::Publisher &pub_7
     group.setPoseTarget(pose_regrasp);
     // plan
     moveit::planning_interface::MoveGroup::Plan plan_regrasp;
-    bool success = group.plan(plan_regrasp);
+    moveit::planning_interface::MoveItErrorCode success = group.plan(plan_regrasp);
     //compensate_slark(my_plan); //compensate the slark for 2nd motor
     // visualization
     ROS_INFO("Visualizing plan of appraching object (pose goal) %s",success?"":"FAILED");    

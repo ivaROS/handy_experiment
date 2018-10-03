@@ -210,7 +210,7 @@ int main(int argc, char **argv){
                 target_pose_task.orientation.y * target_pose_task.orientation.y - target_pose_task.orientation.z * target_pose_task.orientation.z);;
 
             moveit::planning_interface::MoveGroup::Plan my_plan;
-            bool success;
+            moveit::planning_interface::MoveItErrorCode success;
             std::vector<double> target_joint_values(7);
      
             long long int command_block;
@@ -302,7 +302,7 @@ int main(int argc, char **argv){
                 target_pose_task.orientation.y * target_pose_task.orientation.y - target_pose_task.orientation.z * target_pose_task.orientation.z);
 
             moveit::planning_interface::MoveGroup::Plan my_plan;
-            bool success;
+            moveit::planning_interface::MoveItErrorCode success;
             std::vector<double> target_joint_values(7);
      
             long long int command_block;
@@ -546,7 +546,7 @@ void gotoNamedTarget(moveit::planning_interface::MoveGroup &group, std::string t
     // plan
     moveit::planning_interface::MoveGroup::Plan my_plan;
     group.setJointValueTarget(group_variable_values);
-    bool success = group.plan(my_plan);
+    moveit::planning_interface::MoveItErrorCode success = group.plan(my_plan);
     my_plan.trajectory_.joint_trajectory.joint_names.push_back("joint_8");
     compensatePlan(my_plan, joint_8_value);
 
@@ -883,7 +883,7 @@ void gotoJointsTarget(moveit::planning_interface::MoveGroup &group, std::vector<
     // plan
     moveit::planning_interface::MoveGroup::Plan my_plan;
     group.setJointValueTarget(target);
-    bool success = group.plan(my_plan);
+    moveit::planning_interface::MoveItErrorCode success = group.plan(my_plan);
     my_plan.trajectory_.joint_trajectory.joint_names.push_back("joint_8");
     compensatePlan(my_plan, joint_8_value);
 
@@ -904,7 +904,7 @@ void execute_command(moveit::planning_interface::MoveGroup &group, geometry_msgs
     group.setPoseTarget(target_pose);
 
     moveit::planning_interface::MoveGroup::Plan my_plan;
-    bool success = group.plan(my_plan);
+    moveit::planning_interface::MoveItErrorCode success = group.plan(my_plan);
     my_plan.trajectory_.joint_trajectory.joint_names.push_back("joint_8");
     compensatePlan(my_plan, joint_8_value);
 

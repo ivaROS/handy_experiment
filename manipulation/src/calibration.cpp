@@ -178,7 +178,7 @@ int main(int argc, char **argv){
         group.setPoseTarget(target_pose_test);
         // plan
         moveit::planning_interface::MoveGroup::Plan my_plan_test;
-        bool success_test = group.plan(my_plan_test);
+        moveit::planning_interface::MoveItErrorCode success_test = group.plan(my_plan_test);
         my_plan_test.trajectory_.joint_trajectory.joint_names.push_back("joint_8");
         compensatePlan(my_plan_test, joint_8_home_value_paw);
         
@@ -400,7 +400,7 @@ void gotoNamedTarget(moveit::planning_interface::MoveGroup &group, std::string t
     // plan
     moveit::planning_interface::MoveGroup::Plan my_plan;
     group.setJointValueTarget(group_variable_values);
-    bool success = group.plan(my_plan);
+    moveit::planning_interface::MoveItErrorCode success = group.plan(my_plan);
     my_plan.trajectory_.joint_trajectory.joint_names.push_back("joint_8");
     compensatePlan(my_plan, joint_8_value);
 

@@ -417,7 +417,7 @@ void place(moveit::planning_interface::MoveGroup &group,ros::Publisher &pub_8, r
     group.setPoseTarget(target_pose_place);
     // plan
     moveit::planning_interface::MoveGroup::Plan my_plan_place;
-    bool success_place = group.plan(my_plan_place);
+    moveit::planning_interface::MoveItErrorCode success_place = group.plan(my_plan_place);
     // visualization
     ROS_INFO("Visualizing plan 1 (pose goal) %s",success_place?"":"FAILED");    
     // execute
@@ -467,7 +467,7 @@ void gotoNamedTarget(moveit::planning_interface::MoveGroup &group, std::string t
     // plan
     moveit::planning_interface::MoveGroup::Plan my_plan;
     group.setJointValueTarget(group_variable_values);
-    bool success = group.plan(my_plan);
+    moveit::planning_interface::MoveItErrorCode success = group.plan(my_plan);
     //compensate_slark(my_plan);
     /*
     sleep(5);

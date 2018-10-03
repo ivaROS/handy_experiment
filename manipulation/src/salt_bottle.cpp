@@ -383,7 +383,7 @@ void Pickup(moveit::planning_interface::MoveGroup &group, ros::Publisher &pub_8)
     group.setPoseTarget(target_pose_pick);
     // plan
     moveit::planning_interface::MoveGroup::Plan my_plan;
-    bool success = group.plan(my_plan);
+    moveit::planning_interface::MoveItErrorCode success = group.plan(my_plan);
     my_plan.trajectory_.joint_trajectory.joint_names.push_back("joint_8");
     compensatePlan(my_plan, current_joint_values[7]);
 
@@ -437,7 +437,7 @@ void Place(moveit::planning_interface::MoveGroup &group, geometry_msgs::Pose tar
 	group.setPoseTarget(target_pickup);
     // plan
     moveit::planning_interface::MoveGroup::Plan my_plan;
-    bool success = group.plan(my_plan);
+    moveit::planning_interface::MoveItErrorCode success = group.plan(my_plan);
     my_plan.trajectory_.joint_trajectory.joint_names.push_back("joint_8");
     compensatePlan(my_plan, current_joint_values[7] + paw_torque_compensate);
 
@@ -559,7 +559,7 @@ void gotoNamedTarget(moveit::planning_interface::MoveGroup &group, std::string t
     // plan
     moveit::planning_interface::MoveGroup::Plan my_plan;
     group.setJointValueTarget(group_variable_values);
-    bool success = group.plan(my_plan);
+    moveit::planning_interface::MoveItErrorCode success = group.plan(my_plan);
     my_plan.trajectory_.joint_trajectory.joint_names.push_back("joint_8");
     compensatePlan(my_plan, joint_8_value);
 

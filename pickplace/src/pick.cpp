@@ -428,7 +428,7 @@ void pickup(moveit::planning_interface::MoveGroup &group, ros::Publisher &pub_7,
     group.setPoseTarget(target_pose_approach);
     // plan
     moveit::planning_interface::MoveGroup::Plan my_plan_approach;
-    bool success_approach = group.plan(my_plan_approach);
+    moveit::planning_interface::MoveItErrorCode success_approach = group.plan(my_plan_approach);
     // visualization
     ROS_INFO("Visualizing plan 1 (pose goal) %s",success_approach?"":"FAILED");    
     // execute
@@ -490,7 +490,7 @@ void pickup(moveit::planning_interface::MoveGroup &group, ros::Publisher &pub_7,
     group.setPoseTarget(target_pose_pickup);
     // plan
     moveit::planning_interface::MoveGroup::Plan my_plan_pick;
-    bool success_pick = group.plan(my_plan_pick);
+    moveit::planning_interface::MoveItErrorCode success_pick = group.plan(my_plan_pick);
     //compensate_slark(my_plan);
     // visualization
     ROS_INFO("Visualizing plan 1 (pose goal) %s",success_pick?"":"FAILED");    
@@ -535,7 +535,7 @@ void pickup(moveit::planning_interface::MoveGroup &group, ros::Publisher &pub_7,
     group.setPoseTarget(target_pose_lift);
     // plan
     moveit::planning_interface::MoveGroup::Plan my_plan_lift;
-    bool success_lift = group.plan(my_plan_lift);
+    moveit::planning_interface::MoveItErrorCode success_lift = group.plan(my_plan_lift);
     //compensate_slark(my_plan);
     // visualization
     ROS_INFO("Visualizing plan 1 (pose goal) %s",success_lift?"":"FAILED");    
@@ -582,7 +582,7 @@ void gotoNamedTarget(moveit::planning_interface::MoveGroup &group, std::string t
     // plan
     moveit::planning_interface::MoveGroup::Plan my_plan;
     group.setJointValueTarget(group_variable_values);
-    bool success = group.plan(my_plan);
+    moveit::planning_interface::MoveItErrorCode success = group.plan(my_plan);
     //compensate_slark(my_plan);
     /*
     sleep(5);

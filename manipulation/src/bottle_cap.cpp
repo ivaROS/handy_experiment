@@ -329,7 +329,7 @@ void Manipulation_BottleCap(moveit::planning_interface::MoveGroup &group, ros::P
     group.setPoseTarget(target_pose_task);
     // plan
     moveit::planning_interface::MoveGroup::Plan my_plan_task;
-    bool success_task = group.plan(my_plan_task);
+    moveit::planning_interface::MoveItErrorCode success_task = group.plan(my_plan_task);
     my_plan_task.trajectory_.joint_trajectory.joint_names.push_back("joint_8");
     compensatePlan(my_plan_task, joint_8_home_value_paw);
     
@@ -385,7 +385,7 @@ void Manipulation_BottleCap(moveit::planning_interface::MoveGroup &group, ros::P
     group.setPoseTarget(target_pose_lift);
     // plan
     moveit::planning_interface::MoveGroup::Plan my_plan_lift;
-    bool success_lift = group.plan(my_plan_lift);
+    moveit::planning_interface::MoveItErrorCode success_lift = group.plan(my_plan_lift);
     my_plan_lift.trajectory_.joint_trajectory.joint_names.push_back("joint_8");
     compensatePlan(my_plan_lift, current_joint_values[7] + paw_torque_compensate);
     
@@ -512,7 +512,7 @@ void gotoNamedTarget(moveit::planning_interface::MoveGroup &group, std::string t
     // plan
     moveit::planning_interface::MoveGroup::Plan my_plan;
     group.setJointValueTarget(group_variable_values);
-    bool success = group.plan(my_plan);
+    moveit::planning_interface::MoveItErrorCode success = group.plan(my_plan);
     my_plan.trajectory_.joint_trajectory.joint_names.push_back("joint_8");
     compensatePlan(my_plan, joint_8_value);
 

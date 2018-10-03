@@ -624,7 +624,7 @@ void gotoNamedTarget(moveit::planning_interface::MoveGroup &group, std::string t
     // plan
     moveit::planning_interface::MoveGroup::Plan my_plan;
     group.setJointValueTarget(group_variable_values);
-    bool success = group.plan(my_plan);
+    moveit::planning_interface::MoveItErrorCode success = group.plan(my_plan);
     //compensate_slark(my_plan);
     /*
     sleep(5);
@@ -645,7 +645,7 @@ void gotoNamedTarget(moveit::planning_interface::MoveGroup &group, std::string t
  
     // execution
     ROS_INFO("Execution if plan successfully");
-    bool success_exe = group.execute(my_plan);
+    moveit::planning_interface::MoveItErrorCode success_exe = group.execute(my_plan);
 
     //redo if execution failed
 
@@ -840,7 +840,7 @@ geometry_msgs::Pose random_pose_graspable(geometry_msgs::Pose pose_grasp, double
 geometry_msgs::Pose approach(moveit::planning_interface::MoveGroup &group, geometry_msgs::Pose pose_grasp, double angle_grasp, std::string mode){
   geometry_msgs::Pose pose_ee;
   moveit::planning_interface::MoveGroup::Plan plan_approach;
-  bool success_approach;
+  moveit::planning_interface::MoveItErrorCode success_approach;
   if (mode == "ungraspable"){
     pose_ee = random_pose_ungraspable(pose_grasp, angle_grasp);
     // Firstly, go to the position above the target position
@@ -892,7 +892,7 @@ geometry_msgs::Pose approach(moveit::planning_interface::MoveGroup &group, geome
     }  
   }
   // execute need to replan and re execute if execution fails
-  bool success_exe = group.execute(plan_approach);
+  moveit::planning_interface::MoveItErrorCode success_exe = group.execute(plan_approach);
 
   while(!success_exe){
     success_approach = false;
@@ -919,12 +919,12 @@ void down(moveit::planning_interface::MoveGroup &group, geometry_msgs::Pose pose
   group.setPoseTarget(pose);
   // plan
   moveit::planning_interface::MoveGroup::Plan plan;
-  bool success = false;
+  moveit::planning_interface::MoveItErrorCode success = false;
   while(!success){
     success = group.plan(plan);
   }
   // execute
-  bool success_exe = group.execute(plan);
+  moveit::planning_interface::MoveItErrorCode success_exe = group.execute(plan);
   while(!success_exe){
     success = false;
     while(!success){
@@ -947,11 +947,11 @@ void lift(moveit::planning_interface::MoveGroup &group, geometry_msgs::Pose pose
   group.setPoseTarget(pose);
   // plan
   moveit::planning_interface::MoveGroup::Plan plan;
-  bool success = false;
+  moveit::planning_interface::MoveItErrorCode success = false;
   while(!success)
     success = group.plan(plan);
   // execute
-  bool success_exe = group.execute(plan);
+  moveit::planning_interface::MoveItErrorCode success_exe = group.execute(plan);
   while(!success_exe){
     success = false;
     while(!success){

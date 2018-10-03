@@ -287,7 +287,7 @@ void GrabTowel(moveit::planning_interface::MoveGroup &group, ros::Publisher &pub
     group.setPoseTarget(target_pose_task);
     // plan
     moveit::planning_interface::MoveGroup::Plan my_plan_task;
-    bool success_task = group.plan(my_plan_task);
+    moveit::planning_interface::MoveItErrorCode success_task = group.plan(my_plan_task);
     my_plan_task.trajectory_.joint_trajectory.joint_names.push_back("joint_8");
     compensatePlan(my_plan_task, joint_8_home_value_paw);
     
@@ -419,7 +419,7 @@ void gotoNamedTarget(moveit::planning_interface::MoveGroup &group, std::string t
     // plan
     moveit::planning_interface::MoveGroup::Plan my_plan;
     group.setJointValueTarget(group_variable_values);
-    bool success = group.plan(my_plan);
+    moveit::planning_interface::MoveItErrorCode success = group.plan(my_plan);
     my_plan.trajectory_.joint_trajectory.joint_names.push_back("joint_8");
     compensatePlan(my_plan, joint_8_value);
 

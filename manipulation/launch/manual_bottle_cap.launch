@@ -5,6 +5,6 @@
         type="manual_bottle_cap"
         respawn="false" output="screen">
     <rosparam command="load"
-              file="$(find finalasm_moveit_config4)/config/kinematics.yaml"/>
+              file="$(find finalarm_moveit_config)/config/kinematics.yaml"/>
   </node>
 </launch>
