@@ -44,6 +44,7 @@
 #include <std_msgs/Float64.h>
 #include <std_msgs/Bool.h>
 #include <dynamixel_msgs/JointState.h>
+#include <geometry_msgs/PoseStamped.h>
 
 #include <time.h>
 #include <unistd.h>
@@ -92,7 +93,7 @@ void mutex_rotate(double target_angle);
 void openGrabber(ros::Publisher &pub_8, ros::Publisher &pub_9);
 void closeGrabber(ros::Publisher &pub_8, ros::Publisher &pub_9);
 void rotateGripper(ros::Publisher &pub_7, double angle);
-void pickup_place(moveit::planning_interface::MoveGroup &group, ros::Publisher &pub_7, ros::Publisher &pub_8, ros::Publisher &pub_9, bool time_count);
+void pickup_place(moveit::planning_interface::MoveGroup &group, ros::Publisher &pub_7, ros::Publisher &pub_8, ros::Publisher &pub_9, geometry_msgs::PoseStamped &obj_pose, bool time_count);
 const std::vector<std::string> listNamedPoses(moveit::planning_interface::MoveGroup &group);
 void gotoNamedTarget(moveit::planning_interface::MoveGroup &group, std::string target, bool constraint_on);
 void addObject2Scene(moveit::planning_interface::MoveGroup &group, moveit::planning_interface::PlanningSceneInterface &planning_scene_interface, ros::Publisher &collision_object_publisher);
@@ -115,7 +116,16 @@ int main(int argc, char **argv)
     ros::Subscriber sub_endtime = node_handle.subscribe<std_msgs::Bool>("/finalarm_joint_trajectory_action_controller/mutex", 5, traj_end_mutex);
     ros::Subscriber sub_joint_8_state = node_handle.subscribe<dynamixel_msgs::JointState>("/finalarm_position_controller_8/state", 1, update_state);
 
-
+    // Wait for 1 time centroid for object
+    boost::shared_ptr<geometry_msgs::PoseStamped const> shared_obj_pose;
+    geometry_msgs::PoseStamped obj_pose;
+    std::cout << "Attempting to get pose..." << std::endl;
+    shared_obj_pose = ros::topic::waitForMessage<geometry_msgs::PoseStamped>("/vs_obj_pose_3D", node_handle);
+    if (shared_obj_pose != NULL) {
+      obj_pose = *shared_obj_pose;
+      std::cout << "Pose received!" << obj_pose << std::endl;
+    }
+    
     ros::AsyncSpinner spinner(1);
     spinner.start();
 
@@ -164,13 +174,13 @@ int main(int argc, char **argv)
     *****************************************************************/
     /* First put an object into the scene*/
     /* Advertise the collision object message publisher*/
-    ros::Publisher collision_object_publisher = node_handle.advertise<moveit_msgs::CollisionObject>("collision_object", 1);
+    /*ros::Publisher collision_object_publisher = node_handle.advertise<moveit_msgs::CollisionObject>("collision_object", 1);
     while(collision_object_publisher.getNumSubscribers() < 1) {
         ros::WallDuration sleep_t(0.5);
         sleep_t.sleep();
     }
     addObject2Scene(group_arm, planning_scene_interface ,collision_object_publisher);
-  
+    */
     /*****************************************************************
     *                        List stored poses                       *
     *****************************************************************/
@@ -185,10 +195,7 @@ int main(int argc, char **argv)
 
     std::string target = ""; 
     int targetNum = 0;
-    std::cout<<"select target pose above: "; std::cin >> targetNum;
-    if(targetNum == 0) target = "Home";
-    else target = "Home";
-    gotoNamedTarget(group_arm, target, 0);
+    gotoNamedTarget(group_arm, "Home", 0);
 
     /*
     std::string command = "";
@@ -217,7 +224,7 @@ int main(int argc, char **argv)
         // 6. lift gripper a little bit
         // 7. go to place the object
         // 8. go back to home position
-        pickup_place(group_arm, pub_7, pub_8, pub_9, time_count);
+        pickup_place(group_arm, pub_7, pub_8, pub_9, obj_pose, time_count);
 
         gotoNamedTarget(group_arm, target, 0);
 
@@ -376,7 +383,7 @@ void closeGrabber(ros::Publisher &pub_8, ros::Publisher &pub_9){
     }
 }
 
-void pickup_place(moveit::planning_interface::MoveGroup &group, ros::Publisher &pub_7,ros::Publisher &pub_8, ros::Publisher &pub_9, bool time_count){
+void pickup_place(moveit::planning_interface::MoveGroup &group, ros::Publisher &pub_7,ros::Publisher &pub_8, ros::Publisher &pub_9, geometry_msgs::PoseStamped &obj_pose, bool time_count){
 
     /*****************************************************************
     *                       Specify target pose                      *
@@ -386,12 +393,13 @@ void pickup_place(moveit::planning_interface::MoveGroup &group, ros::Publisher &
 
     // target pose constraints 
     double x, y, z;
-    double test;
-    std::cout<<"test:"; std::cin>>test;
-    std::cout<<"input x (ex. 0.4):"; std::cin>>x;
-    std::cout<<"input y (ex. 0.2):"; std::cin>>y;
-    std::cout<<"input z (ex. 0.1 or 0.0):"; std::cin>>z;
-
+    x = obj_pose.pose.position.x;
+    y = obj_pose.pose.position.y;
+    z = obj_pose.pose.position.z;
+    
+    std::cout<<"input x (ex. 0.4):" << x << std::endl;
+    std::cout<<"input y (ex. 0.2):" << y << std::endl;
+    std::cout<<"input z (ex. 0.1 or 0.0):" << z << std::endl;
     clock_t begin_pick = clock();
 
     target_pose_pickup.position.x = x;//0.4;

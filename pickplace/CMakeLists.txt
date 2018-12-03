@@ -1,6 +1,12 @@
 add_executable(pickplace src/pickplace.cpp)
 target_link_libraries(pickplace ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
+add_executable(pickplace_kinect src/pickplace_kinect.cpp)
+target_link_libraries(pickplace_kinect ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+
+add_executable(pickplace_pddl src/pickplace_pddl.cpp)
+target_link_libraries(pickplace_pddl ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+
 add_executable(pick src/pick.cpp)
 target_link_libraries(pick ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 

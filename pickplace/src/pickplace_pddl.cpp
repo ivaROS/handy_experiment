@@ -44,6 +44,8 @@
 #include <std_msgs/Float64.h>
 #include <std_msgs/Bool.h>
 #include <dynamixel_msgs/JointState.h>
+#include <geometry_msgs/PoseStamped.h>
+#include <handy_experiment/action_msg.h>
 
 #include <time.h>
 #include <unistd.h>
@@ -92,7 +94,7 @@ void mutex_rotate(double target_angle);
 void openGrabber(ros::Publisher &pub_8, ros::Publisher &pub_9);
 void closeGrabber(ros::Publisher &pub_8, ros::Publisher &pub_9);
 void rotateGripper(ros::Publisher &pub_7, double angle);
-void pickup_place(moveit::planning_interface::MoveGroup &group, ros::Publisher &pub_7, ros::Publisher &pub_8, ros::Publisher &pub_9, bool time_count);
+void pickup_place(moveit::planning_interface::MoveGroup &group, ros::Publisher &pub_7, ros::Publisher &pub_8, ros::Publisher &pub_9, handy_experiment::action_msg &action_plan, bool time_count);
 const std::vector<std::string> listNamedPoses(moveit::planning_interface::MoveGroup &group);
 void gotoNamedTarget(moveit::planning_interface::MoveGroup &group, std::string target, bool constraint_on);
 void addObject2Scene(moveit::planning_interface::MoveGroup &group, moveit::planning_interface::PlanningSceneInterface &planning_scene_interface, ros::Publisher &collision_object_publisher);
@@ -115,7 +117,16 @@ int main(int argc, char **argv)
     ros::Subscriber sub_endtime = node_handle.subscribe<std_msgs::Bool>("/finalarm_joint_trajectory_action_controller/mutex", 5, traj_end_mutex);
     ros::Subscriber sub_joint_8_state = node_handle.subscribe<dynamixel_msgs::JointState>("/finalarm_position_controller_8/state", 1, update_state);
 
-
+    // Wait for 1 time for plan
+    boost::shared_ptr<handy_experiment::action_msg const> shared_action_plan;
+    handy_experiment::action_msg action_plan;
+    std::cout << "Attempting to get plan..." << std::endl;
+    shared_action_plan = ros::topic::waitForMessage<handy_experiment::action_msg>("/action_plan", node_handle);
+    if (shared_action_plan != NULL) {
+      action_plan = *shared_action_plan;
+      std::cout << "Plan received!" << action_plan << std::endl;
+    }
+    
     ros::AsyncSpinner spinner(1);
     spinner.start();
 
@@ -164,13 +175,13 @@ int main(int argc, char **argv)
     *****************************************************************/
     /* First put an object into the scene*/
     /* Advertise the collision object message publisher*/
-    ros::Publisher collision_object_publisher = node_handle.advertise<moveit_msgs::CollisionObject>("collision_object", 1);
+    /*ros::Publisher collision_object_publisher = node_handle.advertise<moveit_msgs::CollisionObject>("collision_object", 1);
     while(collision_object_publisher.getNumSubscribers() < 1) {
         ros::WallDuration sleep_t(0.5);
         sleep_t.sleep();
     }
     addObject2Scene(group_arm, planning_scene_interface ,collision_object_publisher);
-  
+    */
     /*****************************************************************
     *                        List stored poses                       *
     *****************************************************************/
@@ -182,13 +193,9 @@ int main(int argc, char **argv)
     *****************************************************************/
     // namedTargets stores the names of pre-defined poses(joint values)
     // select the name (ex. "home"), gotoNamedTarget function will find plan to the specific pose
-
     std::string target = ""; 
     int targetNum = 0;
-    std::cout<<"select target pose above: "; std::cin >> targetNum;
-    if(targetNum == 0) target = "Home";
-    else target = "Home";
-    gotoNamedTarget(group_arm, target, 0);
+    gotoNamedTarget(group_arm, "Home", 0);
 
     /*
     std::string command = "";
@@ -197,9 +204,7 @@ int main(int argc, char **argv)
     std::cout<< "Handy is waiting for command! (you might need to run the server)"<<std::endl;
     */
 
-    bool time_count = false;
-    std::cout<<"Would you like to count the time for pick and place? Type:0(No) 1(Yes)"<<std::endl;
-    std::cin>>time_count;
+    bool time_count = true;
     
     int flag = 1;
     while (flag) {
@@ -217,7 +222,7 @@ int main(int argc, char **argv)
         // 6. lift gripper a little bit
         // 7. go to place the object
         // 8. go back to home position
-        pickup_place(group_arm, pub_7, pub_8, pub_9, time_count);
+        pickup_place(group_arm, pub_7, pub_8, pub_9, action_plan, time_count);
 
         gotoNamedTarget(group_arm, target, 0);
 
@@ -376,140 +381,224 @@ void closeGrabber(ros::Publisher &pub_8, ros::Publisher &pub_9){
     }
 }
 
-void pickup_place(moveit::planning_interface::MoveGroup &group, ros::Publisher &pub_7,ros::Publisher &pub_8, ros::Publisher &pub_9, bool time_count){
+void pickup_place(moveit::planning_interface::MoveGroup &group, ros::Publisher &pub_7,ros::Publisher &pub_8, ros::Publisher &pub_9, handy_experiment::action_msg &action_plan, bool time_count){
 
     /*****************************************************************
     *                       Specify target pose                      *
     *****************************************************************/
     ROS_INFO("Setup target_pose for pickup");
     geometry_msgs::Pose target_pose_pickup;
+    int obj_count = 0;
+    // target pose constraints
+    for (int i = 0; i < 2; i++) {
+        if (action_plan.action[i] == 0) {
+            double x, y, z;
+            x = action_plan.pose[obj_count].position.x;
+            y = action_plan.pose[obj_count].position.y;
+            z = 0.05; // what is the home position for y
+            std::cout << "Pick up at:" << x << "," << y << "," << z << std::endl;
+            clock_t begin_pick = clock();
+            target_pose_pickup.position.x = x;
+            target_pose_pickup.position.y = y;
+            target_pose_pickup.position.z = z;
+            
+            tf::Quaternion qat_pick = tf::createQuaternionFromRPY(0, -M_PI, 0);
+            qat_pick.normalize();
+            target_pose_pickup.orientation.x = qat_pick.x();
+            target_pose_pickup.orientation.y = qat_pick.y();
+            target_pose_pickup.orientation.z = qat_pick.z();
+            target_pose_pickup.orientation.w = qat_pick.w();
 
-    // target pose constraints 
-    double x, y, z;
-    double test;
-    std::cout<<"test:"; std::cin>>test;
-    std::cout<<"input x (ex. 0.4):"; std::cin>>x;
-    std::cout<<"input y (ex. 0.2):"; std::cin>>y;
-    std::cout<<"input z (ex. 0.1 or 0.0):"; std::cin>>z;
+            ROS_INFO("go above object");
+            group.setPoseTarget(target_pose_pickup);
+            moveit::planning_interface::MoveGroup::Plan my_plan;
+            moveit::planning_interface::MoveItErrorCode success = group.plan(my_plan);
+            ROS_INFO("Visualizing plan 1 (pose goal) %s", success ? "" : "FAILED");
+            if (success) group.execute(my_plan);
+            mutex_traj();
+         
+            ROS_INFO("open grabber");
+            openGrabber(pub_8, pub_9);                
+            
+            target_pose_pickup.position.z = action_plan.pose[obj_count].position.z;
+            ROS_INFO("go down to object");
+            group.setPoseTarget(target_pose_pickup);
+            success = group.plan(my_plan);
+            ROS_INFO("Visualizing plan 1 (pose goal) %s", success ? "" : "FAILED");
+            if (success) group.execute(my_plan);
+            mutex_traj();
 
-    clock_t begin_pick = clock();
+            ROS_INFO("close grabber");
+            //closeGrabber(pub_8, pub_9);
 
-    target_pose_pickup.position.x = x;//0.4;
-    target_pose_pickup.position.y = y;//0.0;
-    target_pose_pickup.position.z = z;//0.2;
-    std::cout<<M_PI<<std::endl;
-    tf::Quaternion qat_pick = tf::createQuaternionFromRPY(0, -M_PI, 0);
-    qat_pick.normalize();
-    std::cout<<qat_pick<<std::endl;
-    target_pose_pickup.orientation.x = qat_pick.x();//0.577;//0.49; // two-sided gribber
-    target_pose_pickup.orientation.y = qat_pick.y();//0.577;//0.49; // two-sided gribber
-    target_pose_pickup.orientation.z = qat_pick.z();//0.577;//0.49;
-    target_pose_pickup.orientation.w = qat_pick.w(); 
+            ROS_INFO("pickup object");
+            target_pose_pickup.position.z = z;
+            group.setPoseTarget(target_pose_pickup);
+            success = group.plan(my_plan);
+            ROS_INFO("Visualizing plan 1 (pose goal) %s", success ? "" : "FAILED");
+            if (success) group.execute(my_plan);
+            mutex_traj();
+            // mark the object as used
+            obj_count++;
+           
+        } else if (action_plan.action[i] == 1) {
+            double x, y, z;
+            // skip first object for dropoff
+            x = action_plan.pose[obj_count].position.x;
+            y = action_plan.pose[obj_count].position.y;
+            z = 0.05; // what is the home position for y
+            std::cout << "Drop off at:" << x << "," << y << "," << z << std::endl;
+            clock_t begin_pick = clock();
+            target_pose_pickup.position.x = x;
+            target_pose_pickup.position.y = y;
+            target_pose_pickup.position.z = z;
+            
+            tf::Quaternion qat_pick = tf::createQuaternionFromRPY(0, -M_PI, 0);
+            qat_pick.normalize();
+            target_pose_pickup.orientation.x = qat_pick.x();
+            target_pose_pickup.orientation.y = qat_pick.y();
+            target_pose_pickup.orientation.z = qat_pick.z();
+            target_pose_pickup.orientation.w = qat_pick.w();
 
-    ROS_INFO("Go to target_pose for pickup");
-    // set target pose
-    group.setPoseTarget(target_pose_pickup);
-    // plan
-    moveit::planning_interface::MoveGroup::Plan my_plan;
-    moveit::planning_interface::MoveItErrorCode success = group.plan(my_plan);
-    //compensate_slark(my_plan); //compensate the slark for 2nd motor
-    // visualization
-    ROS_INFO("Visualizing plan 1 (pose goal) %s",success?"":"FAILED");    
-    // execute
-    if(success) group.execute(my_plan);
-    mutex_traj();
+            ROS_INFO("go to target_pose for pickup");
+            group.setPoseTarget(target_pose_pickup);
+            moveit::planning_interface::MoveGroup::Plan my_plan;
+            moveit::planning_interface::MoveItErrorCode success = group.plan(my_plan);
+            ROS_INFO("Visualizing plan 1 (pose goal) %s", success ? "" : "FAILED");
+            if (success) group.execute(my_plan);
+            mutex_traj();
+         
+            ROS_INFO("open grabber");
+            openGrabber(pub_8, pub_9);                
+        }
+    }
+   
+    // double x, y, z;
+    // x = obj_pose.pose.position.x;
+    // y = obj_pose.pose.position.y;
+    // z = obj_pose.pose.position.z;
     
-    /****************************************************************
-    *                          Rotate wrist                         *
-    ****************************************************************/
-    double angle;
-    std::cout<<"Input the desired rotation angle(Positive(Clockwise)): ";std::cin>>angle;
-    rotateGripper(pub_7, angle);
+    // std::cout<<"input x (ex. 0.4):" << x << std::endl;
+    // std::cout<<"input y (ex. 0.2):" << y << std::endl;
+    // std::cout<<"input z (ex. 0.1 or 0.0):" << z << std::endl;
+    // clock_t begin_pick = clock();
 
-    /*****************************************************************
-    *                          Open grabber                          *
-    *****************************************************************/
-    ROS_INFO("open grabber");
-    openGrabber(pub_8, pub_9);
+    // target_pose_pickup.position.x = x;//0.4;
+    // target_pose_pickup.position.y = y;//0.0;
+    // target_pose_pickup.position.z = z;//0.2;
+    // std::cout<<M_PI<<std::endl;
+    // tf::Quaternion qat_pick = tf::createQuaternionFromRPY(0, -M_PI, 0);
+    // qat_pick.normalize();
+    // std::cout<<qat_pick<<std::endl;
+    // target_pose_pickup.orientation.x = qat_pick.x();//0.577;//0.49; // two-sided gribber
+    // target_pose_pickup.orientation.y = qat_pick.y();//0.577;//0.49; // two-sided gribber
+    // target_pose_pickup.orientation.z = qat_pick.z();//0.577;//0.49;
+    // target_pose_pickup.orientation.w = qat_pick.w(); 
 
-    /****************************************************************
-    *                Move down to pick up by jacobian               *
-    *****************************************************************/
-    robot_state::RobotStatePtr kinematic_state = group.getCurrentState();
-    const robot_state::JointModelGroup* joint_model_group = group.getCurrentState()->getRobotModel()->getJointModelGroup(group.getName());
-    const std::vector<std::string> &joint_names = joint_model_group->getJointModelNames();
-    kinematic_state->setJointGroupPositions(joint_model_group, current_joint_values);
-    const Eigen::Affine3d &temp = kinematic_state->getGlobalLinkTransform("link_eef");
+    // ROS_INFO("Go to target_pose for pickup");
+    // // set target pose
+    // group.setPoseTarget(target_pose_pickup);
+    // // plan
+    // moveit::planning_interface::MoveGroup::Plan my_plan;
+    // moveit::planning_interface::MoveItErrorCode success = group.plan(my_plan);
+    // //compensate_slark(my_plan); //compensate the slark for 2nd motor
+    // // visualization
+    // ROS_INFO("Visualizing plan 1 (pose goal) %s",success?"":"FAILED");    
+    // // execute
+    // if(success) group.execute(my_plan);
+    // mutex_traj();
+    
+    // /****************************************************************
+    // *                          Rotate wrist                         *
+    // ****************************************************************/
+    // double angle;
+    // std::cout<<"Input the desired rotation angle(Positive(Clockwise)): ";std::cin>>angle;
+    // rotateGripper(pub_7, angle);
 
-    Eigen::Vector3d Trans;
-    Eigen::Matrix3d Rot;
-    Trans = temp.translation();
-    std::cout<<"the current position: \n"<<Trans<<std::endl;
-    target_pose_pickup.position.z = Trans(2);
-    // Eigen::Quaterniond q(temp.rotation());
-    tf::Quaternion qat_down = tf::createQuaternionFromRPY(0, -M_PI, M_PI);
-    qat_down.normalize();
-    target_pose_pickup.orientation.x = qat_down.x();
-    target_pose_pickup.orientation.y = qat_down.y();
-    target_pose_pickup.orientation.z = qat_down.z();
-    target_pose_pickup.orientation.w = qat_down.w();
+    // /*****************************************************************
+    // *                          Open grabber                          *
+    // *****************************************************************/
+    // ROS_INFO("open grabber");
+    // openGrabber(pub_8, pub_9);
 
-    target_pose_pickup.position.z = -0.1; //-0s.01;//-0.05;//target_pose1.position.z - 0.06;
+    // /****************************************************************
+    // *                Move down to pick up by jacobian               *
+    // *****************************************************************/
+    // robot_state::RobotStatePtr kinematic_state = group.getCurrentState();
+    // const robot_state::JointModelGroup* joint_model_group = group.getCurrentState()->getRobotModel()->getJointModelGroup(group.getName());
+    // const std::vector<std::string> &joint_names = joint_model_group->getJointModelNames();
+    // kinematic_state->setJointGroupPositions(joint_model_group, current_joint_values);
+    // const Eigen::Affine3d &temp = kinematic_state->getGlobalLinkTransform("link_eef");
+
+    // Eigen::Vector3d Trans;
+    // Eigen::Matrix3d Rot;
+    // Trans = temp.translation();
+    // std::cout<<"the current position: \n"<<Trans<<std::endl;
+    // target_pose_pickup.position.z = Trans(2);
+    // // Eigen::Quaterniond q(temp.rotation());
+    // tf::Quaternion qat_down = tf::createQuaternionFromRPY(0, -M_PI, M_PI);
+    // qat_down.normalize();
+    // target_pose_pickup.orientation.x = qat_down.x();
+    // target_pose_pickup.orientation.y = qat_down.y();
+    // target_pose_pickup.orientation.z = qat_down.z();
+    // target_pose_pickup.orientation.w = qat_down.w();
+
+    // target_pose_pickup.position.z = -0.1; //-0s.01;//-0.05;//target_pose1.position.z - 0.06;
 
     
-    group.setPoseTarget(target_pose_pickup);
-    // plan
-    success = group.plan(my_plan);
-    //compensate_slark(my_plan);
-    // visualization
-    ROS_INFO("Visualizing plan 1 (pose goal) %s",success?"":"FAILED");    
-    // execute
-    if(success) group.execute(my_plan);
-    mutex_traj();
+    // group.setPoseTarget(target_pose_pickup);
+    // // plan
+    // success = group.plan(my_plan);
+    // //compensate_slark(my_plan);
+    // // visualization
+    // ROS_INFO("Visualizing plan 1 (pose goal) %s",success?"":"FAILED");    
+    // // execute
+    // if(success) group.execute(my_plan);
+    // mutex_traj();
 
-    //Jacobian_hybrid(group, target_pose1, 0.03);
+    // //Jacobian_hybrid(group, target_pose1, 0.03);
 
-    /*****************************************************************
-    *                          Close grabber                          *
-    *****************************************************************/
+    // /*****************************************************************
+    // *                          Close grabber                          *
+    // *****************************************************************/
     
-    ROS_INFO("close grabber");
-    closeGrabber(pub_8, pub_9);
-    clock_t end_pick = clock();
-    time_pick = time_pick + ((double)(end_pick - begin_pick))/CLOCKS_PER_SEC;
+    // ROS_INFO("close grabber");
+    // closeGrabber(pub_8, pub_9);
+    // clock_t end_pick = clock();
+    // time_pick = time_pick + ((double)(end_pick - begin_pick))/CLOCKS_PER_SEC;
 
 
-    /*****************************************************************
-    *                  Lift gribber a little bit                     *
-    *****************************************************************/
-    clock_t begin_place = clock();
+    // /*****************************************************************
+    // *                  Lift gribber a little bit                     *
+    // *****************************************************************/
+    // clock_t begin_place = clock();
 
-    kinematic_state->setJointGroupPositions(joint_model_group, current_joint_values);
-    const Eigen::Affine3d &temp1 = kinematic_state->getGlobalLinkTransform("link_eef");
+    // kinematic_state->setJointGroupPositions(joint_model_group, current_joint_values);
+    // const Eigen::Affine3d &temp1 = kinematic_state->getGlobalLinkTransform("link_eef");
 
-    Eigen::Vector3d Trans1;
-    Trans1 = temp.translation();
-    std::cout<<"the current position: \n"<<Trans1<<std::endl;
-    target_pose_pickup.position.z = Trans1(2);
-    Eigen::Quaterniond q1(temp1.rotation());
-    target_pose_pickup.orientation.x = 1.0;
-    target_pose_pickup.orientation.y = 0.0;
-    target_pose_pickup.orientation.z = 0.0;
-    target_pose_pickup.orientation.w = 0.0;
-    target_pose_pickup.position.z = 0.0;
-    std::cout<<"Height: "<<target_pose_pickup.position.z<<std::endl;
+    // Eigen::Vector3d Trans1;
+    // Trans1 = temp.translation();
+    // std::cout<<"the current position: \n"<<Trans1<<std::endl;
+    // target_pose_pickup.position.z = Trans1(2);
+    // Eigen::Quaterniond q1(temp1.rotation());
+    // target_pose_pickup.orientation.x = 1.0;
+    // target_pose_pickup.orientation.y = 0.0;
+    // target_pose_pickup.orientation.z = 0.0;
+    // target_pose_pickup.orientation.w = 0.0;
+    // target_pose_pickup.position.z = 0.0;
+    // std::cout<<"Height: "<<target_pose_pickup.position.z<<std::endl;
     
-    group.setPoseTarget(target_pose_pickup);
-    // plan
-    success = group.plan(my_plan);
-    //compensate_slark(my_plan);
-    // visualization
-    ROS_INFO("Visualizing plan 1 (pose goal) %s",success?"":"FAILED");    
-    // sleep(1.5);
-    // execute
-    ROS_INFO("Lift the gripper");
-    if(success) group.execute(my_plan);
-    mutex_traj();
+    // group.setPoseTarget(target_pose_pickup);
+    // // plan
+    // success = group.plan(my_plan);
+    // //compensate_slark(my_plan);
+    // // visualization
+    // ROS_INFO("Visualizing plan 1 (pose goal) %s",success?"":"FAILED");    
+    // // sleep(1.5);
+    // // execute
+    // ROS_INFO("Lift the gripper");
+    // if(success) group.execute(my_plan);
+    // mutex_traj();
     
     //Jacobian_hybrid(group,target_pose1,0.03);
 

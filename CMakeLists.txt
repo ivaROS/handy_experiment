@@ -3,9 +3,15 @@ project(handy_experiment)
 
 SET(CMAKE_CXX_FLAGS "-std=c++0x")
 
-find_package(catkin REQUIRED COMPONENTS moveit_core moveit_ros_planning moveit_ros_planning_interface pluginlib cmake_modules)
+find_package(catkin REQUIRED COMPONENTS moveit_core moveit_ros_planning moveit_ros_planning_interface pluginlib cmake_modules message_generation)
 
 find_package(Boost REQUIRED system filesystem date_time thread)
+
+add_message_files(FILES action_msg.msg)
+
+generate_messages(DEPENDENCIES std_msgs geometry_msgs)
+
+catkin_package(CATKIN_DEPENDS message_runtime)
 
 catkin_package(
 #  INCLUDE_DIRS include
@@ -24,3 +30,6 @@ link_directories(${catkin_LIBRARY_DIRS})
 add_subdirectory(pickplace)
 add_subdirectory(manipulation)
 add_subdirectory(closeloop_grasp)
+
+
+
